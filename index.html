@@ -61,7 +61,7 @@
   #hero{overflow:hidden;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding-top:110px;}
   .hero-eyebrow{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:22px;}
   .dot-live{width:8px;height:8px;border-radius:50%;background:#22D3EE;box-shadow:0 0 0 5px rgba(34,211,238,.15);}
-  #hero3d{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.9;}
+  #hero3d{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:1;}
   #hero::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 36% 46% at 50% 50%,rgba(7,7,7,.72) 0%,rgba(7,7,7,.4) 60%,rgba(7,7,7,0) 100%),linear-gradient(180deg,rgba(7,7,7,.0) 70%,var(--bg) 100%);}
   #hero .wrap{position:relative;z-index:2;}
   .hero-title{font-size:clamp(64px,13vw,150px);line-height:.92;letter-spacing:-2px;}
@@ -549,120 +549,124 @@
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
 
   var scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x070707, 0.014);
-  var camera = new THREE.PerspectiveCamera(48, 1, 0.1, 400);
-  camera.position.set(0, 1.5, 38);
-  camera.lookAt(0, 0, 0);
+  var camera = new THREE.PerspectiveCamera(50, 1, 0.1, 400);
+  camera.position.set(0, 0, 38);
   var root = new THREE.Group();
   scene.add(root);
 
   function glowTex() {
     var c = document.createElement('canvas'); c.width = c.height = 64;
     var g = c.getContext('2d'), r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-    r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.25, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+    r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.3, 'rgba(255,255,255,.55)'); r.addColorStop(1, 'rgba(255,255,255,0)');
     g.fillStyle = r; g.fillRect(0, 0, 64, 64);
     return new THREE.CanvasTexture(c);
   }
   var GLOW = glowTex();
-  function label(text, css) {
-    var c = document.createElement('canvas'); c.width = 512; c.height = 96;
-    var g = c.getContext('2d');
-    g.font = '500 34px "JetBrains Mono", monospace'; g.fillStyle = css; g.textBaseline = 'middle';
-    g.fillText(text, 8, 48);
-    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false, opacity: 1 }));
-    s.scale.set(8, 1.5, 1); return s;
+
+  // ---- Neurons: a layered shell plus an inner core, like a network cloud ----
+  var PALETTE = [0x8B5CF6, 0xEC4899, 0x3B82F6, 0x22D3EE].map(function (h) { return new THREE.Color(h); });
+  var N = 150, pos = [], base = [];
+  for (var i = 0; i < N; i++) {
+    var shell = i < N * 0.68;
+    var rad = shell ? 13 + Math.random() * 3 : 3 + Math.random() * 7;
+    var y = 1 - (i + 0.5) / N * 2, rr = Math.sqrt(1 - y * y), th = i * 2.399963;
+    var v = shell ? new THREE.Vector3(Math.cos(th) * rr, y, Math.sin(th) * rr)
+                  : new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize();
+    v.multiplyScalar(rad);
+    pos.push(v);
+    var t = (v.y / 16 + 1) / 2 * 2.99, c0 = PALETTE[Math.floor(t)], c1 = PALETTE[Math.min(3, Math.floor(t) + 1)];
+    base.push(c0.clone().lerp(c1, t - Math.floor(t)));
   }
 
-  // One layer per project, in that project's accent color
-  var LAYERS = [
-    { name: 'WARAQ',     color: 0x3B82F6, css: '#60a5fa', y:  7.2 },
-    { name: 'CREDS',     color: 0xF97316, css: '#fb923c', y:  2.4 },
-    { name: 'SHEETLINE', color: 0x6FBF8B, css: '#86d4a2', y: -2.4 },
-    { name: 'PAPERPILE', color: 0x8B5CF6, css: '#a78bfa', y: -7.2 }
-  ];
-  var SIZE = 16;
-  LAYERS.forEach(function (L) {
-    var g = new THREE.Group(); g.position.y = L.y;
-    var geo = new THREE.BoxGeometry(SIZE, 0.3, SIZE);
-    L.fill = new THREE.MeshBasicMaterial({ color: L.color, transparent: true, opacity: 0.09, depthWrite: false });
-    g.add(new THREE.Mesh(geo, L.fill));
-    L.edge = new THREE.LineBasicMaterial({ color: L.color, transparent: true, opacity: 0.85 });
-    g.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), L.edge));
-    var grid = new THREE.GridHelper(SIZE, 8, L.color, L.color);
-    grid.position.y = 0.17; grid.material.transparent = true; grid.material.opacity = 0.2; g.add(grid);
-    var nodes = [], n = 10;
-    for (var i = 0; i < n; i++) {
-      var p = new THREE.Vector3((Math.random() - .5) * (SIZE - 2), 0.35, (Math.random() - .5) * (SIZE - 2));
-      nodes.push(p);
-      var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: L.color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: .85 }));
-      s.position.copy(p); s.scale.setScalar(0.8); g.add(s);
+  // ---- Synapses: connect each neuron to its nearest neighbours ----
+  var adj = [], edgeSet = {}, edges = [];
+  for (var a = 0; a < N; a++) adj.push([]);
+  for (var a2 = 0; a2 < N; a2++) {
+    var ds = [];
+    for (var b = 0; b < N; b++) if (b !== a2) ds.push([pos[a2].distanceTo(pos[b]), b]);
+    ds.sort(function (p, q) { return p[0] - q[0]; });
+    for (var k = 0; k < 3; k++) {
+      var j = ds[k][1], key = Math.min(a2, j) + '-' + Math.max(a2, j);
+      if (!edgeSet[key] && ds[k][0] < 9) { edgeSet[key] = 1; edges.push([a2, j]); adj[a2].push(j); adj[j].push(a2); }
     }
-    var lp = [];
-    for (var a = 0; a < n; a++) for (var b = a + 1; b < n; b++)
-      if (nodes[a].distanceTo(nodes[b]) < 6) lp.push(nodes[a].x, nodes[a].y, nodes[a].z, nodes[b].x, nodes[b].y, nodes[b].z);
-    var lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(lp, 3));
-    g.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: L.color, transparent: true, opacity: 0.4 })));
-    var lab = label(L.name, L.css); lab.position.set(-SIZE / 2 + 3.4, 1.2, SIZE / 2 + 0.3); g.add(lab);
-    L.group = g; L.nodes = nodes; L.pulse = 0; root.add(g);
+  }
+  var lp = [], lc = [];
+  edges.forEach(function (e) {
+    var p = pos[e[0]], q = pos[e[1]], c1 = base[e[0]], c2 = base[e[1]];
+    lp.push(p.x, p.y, p.z, q.x, q.y, q.z); lc.push(c1.r, c1.g, c1.b, c2.r, c2.g, c2.b);
   });
+  var lg = new THREE.BufferGeometry();
+  lg.setAttribute('position', new THREE.Float32BufferAttribute(lp, 3));
+  lg.setAttribute('color', new THREE.Float32BufferAttribute(lc, 3));
+  root.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false })));
 
-  // dust
-  var dN = 500, dp = new Float32Array(dN * 3);
-  for (var d = 0; d < dN * 3; d++) dp[d] = (Math.random() - .5) * 130;
+  // ---- Neuron glow points (brighten when a signal arrives) ----
+  var np = new Float32Array(N * 3), nc = new Float32Array(N * 3), glow = new Float32Array(N);
+  for (var n = 0; n < N; n++) { np[n * 3] = pos[n].x; np[n * 3 + 1] = pos[n].y; np[n * 3 + 2] = pos[n].z; }
+  var ng = new THREE.BufferGeometry();
+  ng.setAttribute('position', new THREE.BufferAttribute(np, 3));
+  ng.setAttribute('color', new THREE.BufferAttribute(nc, 3));
+  root.add(new THREE.Points(ng, new THREE.PointsMaterial({ size: 1.5, map: GLOW, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true })));
+
+  // ---- Signals travelling along synapses ----
+  var P = 26, sp = new Float32Array(P * 3), sig = [];
+  for (var s = 0; s < P; s++) {
+    var from = Math.floor(Math.random() * N);
+    sig.push({ from: from, to: adj[from].length ? adj[from][Math.floor(Math.random() * adj[from].length)] : from, t: Math.random(), v: 0.012 + Math.random() * 0.014 });
+  }
+  var sg = new THREE.BufferGeometry();
+  sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+  root.add(new THREE.Points(sg, new THREE.PointsMaterial({ size: 1.1, map: GLOW, color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })));
+
+  // ---- Background particles ----
+  var dN = 400, dp = new Float32Array(dN * 3);
+  for (var d = 0; d < dN * 3; d++) dp[d] = (Math.random() - .5) * 110;
   var dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(dp, 3));
-  var dust = new THREE.Points(dg, new THREE.PointsMaterial({ size: 0.12, color: 0x8b8b92, transparent: true, opacity: 0.5 }));
+  var dust = new THREE.Points(dg, new THREE.PointsMaterial({ size: 0.12, color: 0x8b8b92, transparent: true, opacity: 0.45 }));
   scene.add(dust);
 
-  // data pulses travel down and back up through the layers
-  var pulses = [];
-  function spawn() {
-    if (pulses.length > 4) return;
-    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
-    s.scale.setScalar(2); var n0 = LAYERS[0].nodes[Math.floor(Math.random() * LAYERS[0].nodes.length)];
-    s.position.set(n0.x, 12, n0.z); root.add(s);
-    pulses.push({ s: s, stage: 0, dir: 1, wait: 0, k: Math.floor(Math.random() * 9) });
-  }
-  function stepPulses() {
-    for (var i = pulses.length - 1; i >= 0; i--) {
-      var p = pulses[i];
-      if (p.wait > 0) { p.wait--; continue; }
-      var L = LAYERS[p.stage], t = L.nodes[(p.k + p.stage * 3) % L.nodes.length], ty = L.y + 0.5, sp = p.s.position;
-      sp.x += (t.x - sp.x) * 0.07; sp.z += (t.z - sp.z) * 0.07; sp.y += (ty - sp.y) * 0.08;
-      if (Math.abs(sp.y - ty) < 0.15 && Math.abs(sp.x - t.x) < 0.3) {
-        L.pulse = 1; var next = p.stage + p.dir;
-        if (next > 3) { p.dir = -1; p.stage = 3; p.s.material.color.set(0x22D3EE); p.wait = 14; }
-        else if (next < 0) { root.remove(p.s); pulses.splice(i, 1); }
-        else { p.stage = next; p.wait = 6; }
-      }
-    }
-  }
-
-  var mx = 0, my = 0, rx = 0, ry = 0;
+  // ---- Mouse easing ----
+  var mx = 0, my = 0, tx = 0, ty = 0;
   window.addEventListener('mousemove', function (e) { mx = (e.clientX / innerWidth - .5) * 2; my = (e.clientY / innerHeight - .5) * 2; });
+
   function resize() {
     var w = hero.clientWidth, h = hero.clientHeight;
     renderer.setSize(w, h, false); camera.aspect = w / h;
-    var narrow = w < 720; root.scale.setScalar(narrow ? 0.62 : 1.18); root.position.y = narrow ? 2 : 0;
+    var narrow = w < 720; root.scale.setScalar(narrow ? 0.55 : 0.98); root.position.y = narrow ? 3 : 0;
     camera.updateProjectionMatrix();
   }
   window.addEventListener('resize', resize); resize();
 
-  var clock = new THREE.Clock(), visible = true;
+  var clock = new THREE.Clock(), visible = true, spin = 0;
   function frame() {
     var t = clock.getElapsedTime();
-    ry += ((-0.5 + mx * 0.35 + Math.sin(t * 0.22) * 0.14) - ry) * 0.04;
-    rx += ((0.38 + my * 0.12) - rx) * 0.04;
-    root.rotation.y = ry; root.rotation.x = rx;
-    LAYERS.forEach(function (L, i) {
-      L.pulse *= 0.93; L.fill.opacity = 0.09 + L.pulse * 0.2; L.edge.opacity = 0.8 + L.pulse * 0.2;
-      L.group.position.y = L.y + Math.sin(t * 0.8 + i) * 0.14;
-    });
-    stepPulses(); dust.rotation.y = t * 0.01; renderer.render(scene, camera);
+    spin += 0.0016;
+    tx += (mx * 0.5 - tx) * 0.05; ty += (my * 0.3 - ty) * 0.05;
+    root.rotation.y = spin + tx;
+    root.rotation.x = 0.25 + Math.sin(t * 0.2) * 0.08 + ty;
+    dust.rotation.y = -t * 0.01;
+
+    for (var s = 0; s < P; s++) {
+      var g = sig[s]; g.t += g.v;
+      if (g.t >= 1) {
+        glow[g.to] = 1; g.from = g.to; var nb = adj[g.from];
+        g.to = nb.length ? nb[Math.floor(Math.random() * nb.length)] : g.from; g.t = 0;
+      }
+      var p = pos[g.from], q = pos[g.to];
+      sp[s * 3] = p.x + (q.x - p.x) * g.t; sp[s * 3 + 1] = p.y + (q.y - p.y) * g.t; sp[s * 3 + 2] = p.z + (q.z - p.z) * g.t;
+    }
+    sg.attributes.position.needsUpdate = true;
+    for (var i = 0; i < N; i++) {
+      glow[i] *= 0.94; var k = 0.55 + glow[i] * 1.6, c = base[i];
+      nc[i * 3] = Math.min(1, c.r * k); nc[i * 3 + 1] = Math.min(1, c.g * k); nc[i * 3 + 2] = Math.min(1, c.b * k);
+    }
+    ng.attributes.color.needsUpdate = true;
+    renderer.render(scene, camera);
   }
   if (reduce) { frame(); return; }
   function loop() { requestAnimationFrame(loop); if (visible) frame(); }
   if ('IntersectionObserver' in window) new IntersectionObserver(function (e) { visible = e[0].isIntersecting; }).observe(hero);
-  setInterval(function () { if (visible) spawn(); }, 2400); spawn(); loop();
+  loop();
 })();
 </script>
 
