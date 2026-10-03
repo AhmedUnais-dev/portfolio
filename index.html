@@ -549,8 +549,8 @@
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
 
   var scene = new THREE.Scene();
-  var camera = new THREE.PerspectiveCamera(50, 1, 0.1, 400);
-  camera.position.set(0, 0, 38);
+  var camera = new THREE.PerspectiveCamera(46, 1, 0.1, 400);
+  camera.position.set(0, 0, 42);
   var root = new THREE.Group();
   scene.add(root);
 
@@ -562,108 +562,149 @@
     return new THREE.CanvasTexture(c);
   }
   var GLOW = glowTex();
+  function gauss() { return (Math.random() + Math.random() + Math.random() - 1.5) / 1.5; }
 
-  // ---- Neurons: a layered shell plus an inner core, like a network cloud ----
-  var PALETTE = [0x8B5CF6, 0xEC4899, 0x3B82F6, 0x22D3EE].map(function (h) { return new THREE.Color(h); });
-  var N = 150, pos = [], base = [];
-  for (var i = 0; i < N; i++) {
-    var shell = i < N * 0.68;
-    var rad = shell ? 13 + Math.random() * 3 : 3 + Math.random() * 7;
-    var y = 1 - (i + 0.5) / N * 2, rr = Math.sqrt(1 - y * y), th = i * 2.399963;
-    var v = shell ? new THREE.Vector3(Math.cos(th) * rr, y, Math.sin(th) * rr)
-                  : new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize();
-    v.multiplyScalar(rad);
-    pos.push(v);
-    var t = (v.y / 16 + 1) / 2 * 2.99, c0 = PALETTE[Math.floor(t)], c1 = PALETTE[Math.min(3, Math.floor(t) + 1)];
-    base.push(c0.clone().lerp(c1, t - Math.floor(t)));
+  // Concept: one shared stack (hub) feeding four products (clusters)
+  var CLUSTERS = [
+    { name: 'WARAQ',     c1: 0x3B82F6, c2: 0x22D3EE, dir: [ 1,  1,  1], css: '#7db3ff' },
+    { name: 'CREDS',     c1: 0xF97316, c2: 0xEF4444, dir: [ 1, -1, -1], css: '#ffa566' },
+    { name: 'SHEETLINE', c1: 0x6FBF8B, c2: 0xA7CDB2, dir: [-1,  1, -1], css: '#8fdcaa' },
+    { name: 'PAPERPILE', c1: 0x8B5CF6, c2: 0xEC4899, dir: [-1, -1,  1], css: '#b79bff' }
+  ];
+  var STACK = ['React', 'Next.js', 'Vite', 'Python', 'Firebase', 'API'];
+  var R = 11, pos = [], base = [], grp = [], centers = [];
+
+  // hub: shared stack
+  var hubIdx = [];
+  for (var h = 0; h < 18; h++) {
+    pos.push(new THREE.Vector3(gauss() * 4, gauss() * 4, gauss() * 4));
+    base.push(new THREE.Color(0xdfe7ff).lerp(new THREE.Color(0x22D3EE), Math.random() * .5)); grp.push(-1); hubIdx.push(pos.length - 1);
   }
-
-  // ---- Synapses: connect each neuron to its nearest neighbours ----
-  var adj = [], edgeSet = {}, edges = [];
-  for (var a = 0; a < N; a++) adj.push([]);
-  for (var a2 = 0; a2 < N; a2++) {
-    var ds = [];
-    for (var b = 0; b < N; b++) if (b !== a2) ds.push([pos[a2].distanceTo(pos[b]), b]);
-    ds.sort(function (p, q) { return p[0] - q[0]; });
-    for (var k = 0; k < 3; k++) {
-      var j = ds[k][1], key = Math.min(a2, j) + '-' + Math.max(a2, j);
-      if (!edgeSet[key] && ds[k][0] < 9) { edgeSet[key] = 1; edges.push([a2, j]); adj[a2].push(j); adj[j].push(a2); }
+  // clusters: products
+  CLUSTERS.forEach(function (C, ci) {
+    var d = new THREE.Vector3(C.dir[0], C.dir[1], C.dir[2]).normalize().multiplyScalar(R);
+    centers.push(d); C.center = d; C.idx = [];
+    var a = new THREE.Color(C.c1), b = new THREE.Color(C.c2);
+    for (var i = 0; i < 36; i++) {
+      pos.push(new THREE.Vector3(d.x + gauss() * 4.4, d.y + gauss() * 4.4, d.z + gauss() * 4.4));
+      base.push(a.clone().lerp(b, Math.random())); grp.push(ci); C.idx.push(pos.length - 1);
     }
+  });
+  var N = pos.length;
+
+  // synapses
+  var adj = [], seen = {}, edges = [];
+  for (var q = 0; q < N; q++) adj.push([]);
+  function link(i, j) {
+    var k = Math.min(i, j) + '-' + Math.max(i, j);
+    if (i === j || seen[k]) return; seen[k] = 1; edges.push([i, j]); adj[i].push(j); adj[j].push(i);
   }
+  for (var i2 = 0; i2 < N; i2++) {
+    var ds = [];
+    for (var j2 = 0; j2 < N; j2++) if (j2 !== i2 && grp[j2] === grp[i2]) ds.push([pos[i2].distanceTo(pos[j2]), j2]);
+    ds.sort(function (a, b) { return a[0] - b[0]; });
+    for (var k2 = 0; k2 < 3 && k2 < ds.length; k2++) link(i2, ds[k2][1]);
+  }
+  function nearest(from, list) {
+    var best = list[0], bd = 1e9;
+    list.forEach(function (j) { var d = pos[from].distanceTo(pos[j]); if (d < bd) { bd = d; best = j; } });
+    return best;
+  }
+  // hub -> each product (3 bridges each), and product <-> product bridges
+  CLUSTERS.forEach(function (C) {
+    var picks = C.idx.slice().sort(function (a, b) { return pos[a].length() - pos[b].length(); }).slice(0, 3);
+    picks.forEach(function (p) { link(p, nearest(p, hubIdx)); });
+  });
+  for (var x = 0; x < 4; x++) for (var y = x + 1; y < 4; y++) {
+    var best = [1e9, 0, 0];
+    CLUSTERS[x].idx.forEach(function (a) { CLUSTERS[y].idx.forEach(function (b) { var d = pos[a].distanceTo(pos[b]); if (d < best[0]) best = [d, a, b]; }); });
+    link(best[1], best[2]);
+  }
+
   var lp = [], lc = [];
   edges.forEach(function (e) {
-    var p = pos[e[0]], q = pos[e[1]], c1 = base[e[0]], c2 = base[e[1]];
-    lp.push(p.x, p.y, p.z, q.x, q.y, q.z); lc.push(c1.r, c1.g, c1.b, c2.r, c2.g, c2.b);
+    var p = pos[e[0]], r = pos[e[1]], c1 = base[e[0]], c2 = base[e[1]];
+    lp.push(p.x, p.y, p.z, r.x, r.y, r.z); lc.push(c1.r, c1.g, c1.b, c2.r, c2.g, c2.b);
   });
   var lg = new THREE.BufferGeometry();
   lg.setAttribute('position', new THREE.Float32BufferAttribute(lp, 3));
   lg.setAttribute('color', new THREE.Float32BufferAttribute(lc, 3));
-  root.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending, depthWrite: false })));
+  root.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false })));
 
-  // ---- Neuron glow points (brighten when a signal arrives) ----
   var np = new Float32Array(N * 3), nc = new Float32Array(N * 3), glow = new Float32Array(N);
   for (var n = 0; n < N; n++) { np[n * 3] = pos[n].x; np[n * 3 + 1] = pos[n].y; np[n * 3 + 2] = pos[n].z; }
   var ng = new THREE.BufferGeometry();
   ng.setAttribute('position', new THREE.BufferAttribute(np, 3));
   ng.setAttribute('color', new THREE.BufferAttribute(nc, 3));
-  root.add(new THREE.Points(ng, new THREE.PointsMaterial({ size: 1.5, map: GLOW, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true })));
+  root.add(new THREE.Points(ng, new THREE.PointsMaterial({ size: 1.45, map: GLOW, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })));
 
-  // ---- Signals travelling along synapses ----
-  var P = 26, sp = new Float32Array(P * 3), sig = [];
-  for (var s = 0; s < P; s++) {
-    var from = Math.floor(Math.random() * N);
-    sig.push({ from: from, to: adj[from].length ? adj[from][Math.floor(Math.random() * adj[from].length)] : from, t: Math.random(), v: 0.012 + Math.random() * 0.014 });
-  }
-  var sg = new THREE.BufferGeometry();
-  sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+  // signals start in the hub and flow outward through the network
+  var P = 28, sp = new Float32Array(P * 3), sig = [];
+  function startSig(g) { g.from = hubIdx[Math.floor(Math.random() * hubIdx.length)]; g.to = adj[g.from][Math.floor(Math.random() * adj[g.from].length)]; g.t = 0; }
+  for (var s = 0; s < P; s++) { var g0 = { v: 0.012 + Math.random() * 0.012, life: Math.floor(Math.random() * 40) }; startSig(g0); g0.t = Math.random(); sig.push(g0); }
+  var sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
   root.add(new THREE.Points(sg, new THREE.PointsMaterial({ size: 1.1, map: GLOW, color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })));
 
-  // ---- Background particles ----
-  var dN = 400, dp = new Float32Array(dN * 3);
+  // labels
+  function label(text, css, size, op) {
+    var c = document.createElement('canvas'); c.width = 512; c.height = 96;
+    var g = c.getContext('2d'); g.font = '700 ' + size + 'px "JetBrains Mono", monospace'; g.fillStyle = css; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(text, 256, 48);
+    var sp2 = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false, opacity: op }));
+    sp2.scale.set(9, 1.7, 1); return sp2;
+  }
+  function addLabels() {
+    CLUSTERS.forEach(function (C) {
+      var l = label(C.name, C.css, 38, .95); l.position.copy(C.center).multiplyScalar(1.25); l.position.y += 3; root.add(l);
+    });
+    STACK.forEach(function (t, i) {
+      var l = label(t, '#cfd8ee', 30, .6), a = i / STACK.length * Math.PI * 2;
+      l.scale.set(6.6, 1.25, 1); l.position.set(Math.cos(a) * 6.5, Math.sin(a) * 6.5 * .5, Math.sin(a) * 6.5); root.add(l);
+    });
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(addLabels); else addLabels();
+
+  var dN = 350, dp = new Float32Array(dN * 3);
   for (var d = 0; d < dN * 3; d++) dp[d] = (Math.random() - .5) * 110;
   var dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(dp, 3));
-  var dust = new THREE.Points(dg, new THREE.PointsMaterial({ size: 0.12, color: 0x8b8b92, transparent: true, opacity: 0.45 }));
+  var dust = new THREE.Points(dg, new THREE.PointsMaterial({ size: 0.12, color: 0x8b8b92, transparent: true, opacity: 0.4 }));
   scene.add(dust);
 
-  // ---- Mouse easing ----
   var mx = 0, my = 0, tx = 0, ty = 0;
   window.addEventListener('mousemove', function (e) { mx = (e.clientX / innerWidth - .5) * 2; my = (e.clientY / innerHeight - .5) * 2; });
-
   function resize() {
     var w = hero.clientWidth, h = hero.clientHeight;
     renderer.setSize(w, h, false); camera.aspect = w / h;
-    var narrow = w < 720; root.scale.setScalar(narrow ? 0.55 : 0.98); root.position.y = narrow ? 3 : 0;
+    var narrow = w < 720; root.scale.setScalar(narrow ? 0.66 : 1.22); root.position.y = narrow ? 2 : -1;
     camera.updateProjectionMatrix();
   }
   window.addEventListener('resize', resize); resize();
 
   var clock = new THREE.Clock(), visible = true, spin = 0;
   function frame() {
-    var t = clock.getElapsedTime();
-    spin += 0.0016;
-    tx += (mx * 0.5 - tx) * 0.05; ty += (my * 0.3 - ty) * 0.05;
-    root.rotation.y = spin + tx;
-    root.rotation.x = 0.25 + Math.sin(t * 0.2) * 0.08 + ty;
+    var t = clock.getElapsedTime(); spin += 0.0014;
+    tx += (mx * 0.45 - tx) * 0.05; ty += (my * 0.25 - ty) * 0.05;
+    root.rotation.y = spin + tx; root.rotation.x = 0.22 + Math.sin(t * 0.2) * 0.07 + ty;
     dust.rotation.y = -t * 0.01;
-
     for (var s = 0; s < P; s++) {
       var g = sig[s]; g.t += g.v;
       if (g.t >= 1) {
-        glow[g.to] = 1; g.from = g.to; var nb = adj[g.from];
-        g.to = nb.length ? nb[Math.floor(Math.random() * nb.length)] : g.from; g.t = 0;
+        glow[g.to] = 1; g.from = g.to; g.life++;
+        if (g.life > 22) { g.life = 0; startSig(g); }
+        else { var nb = adj[g.from]; g.to = nb[Math.floor(Math.random() * nb.length)]; g.t = 0; }
       }
       var p = pos[g.from], q = pos[g.to];
       sp[s * 3] = p.x + (q.x - p.x) * g.t; sp[s * 3 + 1] = p.y + (q.y - p.y) * g.t; sp[s * 3 + 2] = p.z + (q.z - p.z) * g.t;
     }
     sg.attributes.position.needsUpdate = true;
     for (var i = 0; i < N; i++) {
-      glow[i] *= 0.94; var k = 0.55 + glow[i] * 1.6, c = base[i];
+      glow[i] *= 0.94; var k = 0.6 + glow[i] * 1.6, c = base[i];
       nc[i * 3] = Math.min(1, c.r * k); nc[i * 3 + 1] = Math.min(1, c.g * k); nc[i * 3 + 2] = Math.min(1, c.b * k);
     }
     ng.attributes.color.needsUpdate = true;
     renderer.render(scene, camera);
   }
-  if (reduce) { frame(); return; }
+  if (reduce) { frame(); if (document.fonts) document.fonts.ready.then(function () { setTimeout(frame, 50); }); return; }
   function loop() { requestAnimationFrame(loop); if (visible) frame(); }
   if ('IntersectionObserver' in window) new IntersectionObserver(function (e) { visible = e[0].isIntersecting; }).observe(hero);
   loop();
