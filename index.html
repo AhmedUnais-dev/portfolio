@@ -3,7 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ahmed Unais — Product Builder</title>
+<title>Ahmed Unais — Junior Software Engineer | Python &amp; Web Developer</title>
+<meta name="description" content="Junior software engineer in Karachi who builds and ships web apps with Python, JavaScript, HTML &amp; CSS. See 4 live projects with problem, solution and role, then get in touch.">
+<meta name="author" content="Ahmed Unais">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Ahmed Unais — Junior Software Engineer">
+<meta property="og:description" content="I build and ship complete web apps. Four live projects, each solving a real problem. Open to junior software engineering roles.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Ahmed Unais — Junior Software Engineer">
+<meta name="twitter:description" content="I build and ship complete web apps. Four live projects, each solving a real problem. Open to junior software engineering roles.">
 <meta name="google-site-verification" content="xUG3UHvX_W882AaIoweF4gwWNm2zk3x1qGZsMcHS0vk">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
@@ -156,6 +165,14 @@
     .ghost-num{font-size:130px;}
   }
 
+  /* --- case-study rows --- */
+  .case{position:relative;z-index:1;max-width:720px;margin:22px 0 26px;display:flex;flex-direction:column;}
+  .case-row{display:flex;gap:22px;padding:14px 0;border-top:1px solid var(--line);}
+  .case-row:first-child{border-top:none;padding-top:0;}
+  .case-label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);width:92px;flex-shrink:0;padding-top:4px;}
+  .case-text{color:#c4c4ca;font-size:16px;line-height:1.7;}
+  @media(max-width:720px){.case-row{flex-direction:column;gap:4px;}}
+
   /* --- fixes --- */
   @media(max-width:720px){ .nav-links{display:flex;gap:14px;font-size:12px;} }
   @media(max-width:430px){ nav{padding:18px 16px;gap:10px;} .nav-links{gap:12px;font-size:11.5px;} .nav-cta{padding:9px 14px;font-size:12px;} }
@@ -196,11 +213,11 @@
   <div class="wrap">
     <div class="hero-eyebrow">
       <span class="dot-live"></span>
-      <span class="eyebrow">Available for work · 2026</span>
+      <span class="eyebrow">Open to junior roles · 2026</span>
     </div>
     <h1 class="display hero-title">AHMED<br><span class="accent">UNAIS</span></h1>
-    <div class="hero-role">AI-Assisted Product Builder</div>
-    <p class="hero-sub">I design and build functional products end-to-end, using AI-assisted workflows to accelerate development on components like backend authentication. I also produce high-quality promotional videos, flyers, and graphic content for brands using AI-powered tools.</p>
+    <div class="hero-role">Junior Software Engineer · Python &amp; Web</div>
+    <p class="hero-sub">I build and ship complete web apps, from the interface to data handling to deployment. I have four live projects, each solving a real problem for real users. I am looking for a junior software engineer role where I can keep growing my Python and web fundamentals on a team.</p>
     <div class="hero-actions">
       <a class="btn-grad" href="#projects">See my work</a>
       <a class="btn-ghost" href="#contact">Get in touch</a>
@@ -214,7 +231,7 @@
       <span class="eyebrow">Who I am</span>
       <h2 class="display">About Me</h2>
     </div>
-    <p class="about-body">I'm based in Karachi, focused on building products rather than chasing a specific tech stack. <span class="fade">I favor practical, low-code solutions over unnecessary complexity.</span> I'm learning Python while shipping real applications in parallel, <span class="fade">using AI-assisted development to move faster on components like backend authentication.</span> My priority is execution and product thinking — building things that work, and improving the craft with every project.</p>
+    <p class="about-body">I'm a junior software engineer based in Karachi, Pakistan. I learn by shipping: I've built and deployed four web apps, including WARAQ, an exam-prep platform for Sindh Board students. <span class="fade">I'm strengthening my Python and JavaScript fundamentals, and I use AI coding tools as an assistant for work like backend authentication.</span> I care about clear UX, privacy-first design, and software that works for the person using it. <span class="fade">I'm looking for a junior role where I can learn from code reviews and contribute from day one.</span></p>
 
     <div class="skills-block">
       <div class="skill-row">
@@ -227,11 +244,21 @@
         </div>
       </div>
       <div class="skill-row">
-        <div class="skill-row-label">How I build</div>
+        <div class="skill-row-label">Practices</div>
         <div class="pill-group">
           <div class="pill">AI-Assisted Development</div>
           <div class="pill">Prompt Engineering</div>
           <div class="pill">Product Design</div>
+        </div>
+      </div>
+      <div class="skill-row">
+        <div class="skill-row-label">Hands-on with</div>
+        <div class="pill-group">
+          <div class="pill">Git &amp; GitHub</div>
+          <div class="pill">Responsive UI</div>
+          <div class="pill">IndexedDB &amp; browser storage</div>
+          <div class="pill">Client-side file processing</div>
+          <div class="pill">Deploying on Vercel</div>
         </div>
       </div>
     </div>
@@ -245,7 +272,7 @@
 <section id="projects" class="divider">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">Currently building</span>
+      <span class="eyebrow">Selected work</span>
       <h2 class="display">Projects</h2>
     </div>
 
@@ -257,9 +284,13 @@
           <div class="proj-name display">WARAQ</div>
           <div class="proj-rule"></div>
         </div>
-        <div class="proj-badge">🇵🇰 First of its kind in Pakistan</div>
+        <div class="proj-badge">🚀 Live · Solo build</div>
       </div>
-      <p class="proj-desc-v2">An exam-prep companion built for Sindh Board students — chapters ranked by exam relevance, an AI tutor that explains concepts with charts, real-time study groups, and a "Night Before Exam" mode for last-minute rapid-fire revision. Built solo, part AI-assisted, part hands-on.</p>
+      <div class="case">
+        <div class="case-row"><div class="case-label">Problem</div><div class="case-text">Students preparing for Sindh Board exams revise from scattered notes and past papers, with no clear way to tell which chapters matter most.</div></div>
+        <div class="case-row"><div class="case-label">Solution</div><div class="case-text">A web app that ranks chapters by exam relevance, explains concepts through an AI tutor with charts, and offers MCQ practice, past papers, real-time study groups and a "Night Before Exam" rapid-revision mode.</div></div>
+        <div class="case-row"><div class="case-label">My role</div><div class="case-text">Sole developer: product design, front end and backend authentication, using AI-assisted workflows for parts of the build. Live on Vercel.</div></div>
+      </div>
       <div class="feat-chips-v2">
         <div class="feat-chip">📚 Subjects by heat</div>
         <div class="feat-chip">🤖 AI Tutor</div>
@@ -309,9 +340,13 @@
           <div class="proj-name display">CREDS</div>
           <div class="proj-rule"></div>
         </div>
-        <div class="proj-badge">🇵🇰 For Pakistani students & freelancers</div>
+        <div class="proj-badge">🇵🇰 For students &amp; freelancers</div>
       </div>
-      <p class="proj-desc-v2">A verified certificate portfolio platform. CREDS aggregates free and paid courses from Harvard, Coursera, DigiSkills.pk, and NAVTTC into one directory, then lets students and freelancers build a single verified profile proving what they've actually learned — instead of scattered, unverifiable certificates across a dozen platforms.</p>
+      <div class="case">
+        <div class="case-row"><div class="case-label">Problem</div><div class="case-text">Learners collect certificates from Harvard, Coursera, DigiSkills.pk and NAVTTC, but they end up scattered across platforms and are hard to verify or show together.</div></div>
+        <div class="case-row"><div class="case-label">Solution</div><div class="case-text">A course directory that aggregates 40+ courses from 15+ providers with category, price and level filters, plus a personal dashboard that tracks certificates and progress over time.</div></div>
+        <div class="case-row"><div class="case-label">My role</div><div class="case-text">Sole developer: directory, filtering and dashboard. Certificate verification is in progress.</div></div>
+      </div>
       <div class="feat-chips-v2">
         <div class="feat-chip">📚 40+ courses aggregated</div>
         <div class="feat-chip">✅ Certificate verification</div>
@@ -361,7 +396,11 @@
         </div>
         <div class="proj-badge">🔒 Files never leave your device</div>
       </div>
-      <p class="proj-desc-v2">I made this for auditing companies who work between PDFs and spreadsheets every day. PDF → Excel batch-extracts selectable text into a traceable workbook where every line keeps its source file, page and position — and scanned pages are flagged instead of silently coming out blank. Excel → PDF does the reverse, turning a workbook into a clean, readable PDF with headings repeated on every page. Everything runs in the browser, so client files stay private.</p>
+      <div class="case">
+        <div class="case-row"><div class="case-label">Problem</div><div class="case-text">Auditors move between PDFs and spreadsheets every day. Copied data loses its source, and scanned pages silently come out blank.</div></div>
+        <div class="case-row"><div class="case-label">Solution</div><div class="case-text">PDF to Excel batch-extracts selectable text into a workbook where every line keeps its source file, page and position, and flags scanned pages. Excel to PDF turns a workbook into a readable PDF with headings repeated on every page.</div></div>
+        <div class="case-row"><div class="case-label">My role</div><div class="case-text">Sole developer. Key decision: all processing runs in the browser, so client files never leave the user's device.</div></div>
+      </div>
       <div class="feat-chips-v2">
         <div class="feat-chip">📄 PDF → Excel</div>
         <div class="feat-chip">📊 Excel → PDF</div>
@@ -415,7 +454,11 @@
         </div>
         <div class="proj-badge">📌 No account, no cloud</div>
       </div>
-      <p class="proj-desc-v2">A single-file, no-install web app for pinning, organizing, and previewing your PDFs — right from your desktop taskbar. No account, no server, no cloud. Everything lives privately in your own browser, saved locally via IndexedDB.</p>
+      <div class="case">
+        <div class="case-row"><div class="case-label">Problem</div><div class="case-text">PDFs end up scattered across folders and are slow to find and reopen.</div></div>
+        <div class="case-row"><div class="case-label">Solution</div><div class="case-text">A single-file web app for pinning, organizing and previewing PDFs, with real cover-page thumbnails, custom folders, rename in place and instant search. It can be pinned to the desktop taskbar.</div></div>
+        <div class="case-row"><div class="case-label">My role</div><div class="case-text">Sole developer. Key decision: data is stored locally with IndexedDB, so there is no account, server or cloud, and it works offline.</div></div>
+      </div>
       <div class="feat-chips-v2">
         <div class="feat-chip">🏠 Real cover-page thumbnails</div>
         <div class="feat-chip">📁 Custom folders</div>
@@ -461,6 +504,7 @@
       <span class="eyebrow">Get in touch</span>
       <h2 class="display">Contact</h2>
     </div>
+    <p class="about-body" style="margin-bottom:40px;font-size:17px;">I'm open to junior software engineering roles and internships. Email is the fastest way to reach me.</p>
     <div class="contact-grid">
       <a class="contact-card" href="mailto:ahmedunaisx@gmail.com">
         <div class="contact-label">Email</div>
@@ -478,7 +522,7 @@
   </div>
 </section>
 
-<footer>© 2026 Ahmed Unais — Built while learning, one waraq at a time.</footer>
+<footer>© 2026 Ahmed Unais — Junior Software Engineer · Karachi, PK</footer>
 
 </body>
 </html>
